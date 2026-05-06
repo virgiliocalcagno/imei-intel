@@ -68,7 +68,7 @@ export default function HomePage() {
         <QuickLookup />
         <UploadDropzone />
 
-        <div className="grid grid-cols-3 gap-gutter">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-gutter">
           <StatCard
             label="TOTAL PROCESADO"
             value={totalProcessed.toLocaleString()}
@@ -130,10 +130,10 @@ export default function HomePage() {
       </div>
 
       <div className="col-span-12 mt-gutter">
-        <div className="bg-surface-container rounded-xl p-stack-lg border border-outline-variant flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div className="w-16 h-16 bg-surface-container-lowest rounded-xl flex items-center justify-center border border-outline-variant">
-              <ShieldCheck className="w-8 h-8 text-primary" />
+        <div className="bg-surface-container rounded-xl p-stack-md sm:p-stack-lg border border-outline-variant flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4 sm:gap-6">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-surface-container-lowest rounded-xl flex items-center justify-center border border-outline-variant shrink-0">
+              <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
             </div>
             <div>
               <h4 className="text-headline-md text-primary">Procesamiento Local</h4>
@@ -144,7 +144,7 @@ export default function HomePage() {
           </div>
           <Link
             href="/reports"
-            className="px-6 py-2 border border-primary text-primary font-semibold rounded hover:bg-primary hover:text-on-primary transition-colors"
+            className="px-6 py-2 border border-primary text-primary font-semibold rounded hover:bg-primary hover:text-on-primary transition-colors text-center shrink-0"
           >
             Exportar Reportes
           </Link>

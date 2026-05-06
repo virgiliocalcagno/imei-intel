@@ -98,7 +98,7 @@ function ResultsInner() {
         </Link>
       </div>
 
-      <div className="col-span-12 grid grid-cols-2 lg:grid-cols-5 gap-gutter">
+      <div className="col-span-12 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-gutter">
         <Stat
           label="ÚNICOS"
           value={s.unique.toLocaleString()}
