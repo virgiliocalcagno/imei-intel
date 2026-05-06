@@ -3,10 +3,30 @@ import { getDb, logAudit } from "@/lib/db";
 import { normalize, validate } from "@/lib/imei";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 interface Body {
   value: string;
   actor?: string;
+}
+
+interface BlacklistRow {
+  id: number;
+  value: string;
+  kind: string;
+  category: string;
+  reason: string | null;
+  caseNumber: string | null;
+  reportedBy: string | null;
+  reportedAt: string;
+  notes: string | null;
+}
+
+interface OccurrenceRow {
+  uploadId: string;
+  fileName: string;
+  uploadedAt: string;
+  rowIndex: number;
 }
 
 export async function POST(req: Request) {
@@ -14,43 +34,38 @@ export async function POST(req: Request) {
   const value = normalize(body?.value ?? "");
   if (!value) return NextResponse.json({ error: "missing value" }, { status: 400 });
 
-  const db = getDb();
+  const db = await getDb();
   const validation = validate(value);
 
-  const blacklisted = db
-    .prepare(
-      `SELECT id, value, kind, category, reason, case_number AS caseNumber,
-              reported_by AS reportedBy, reported_at AS reportedAt, notes
-       FROM blacklist WHERE value = ?`
-    )
-    .get(value) as
-    | {
-        id: number;
-        value: string;
-        kind: string;
-        category: string;
-        reason: string | null;
-        caseNumber: string | null;
-        reportedBy: string | null;
-        reportedAt: number;
-        notes: string | null;
-      }
-    | undefined;
+  const blRows = await db.query<BlacklistRow>(
+    `SELECT id, value, kind, category, reason,
+            case_number AS "caseNumber",
+            reported_by AS "reportedBy",
+            reported_at AS "reportedAt",
+            notes
+       FROM blacklist WHERE value = $1`,
+    [value]
+  );
+  const blacklisted = blRows.rows[0]
+    ? { ...blRows.rows[0], reportedAt: Number(blRows.rows[0].reportedAt) }
+    : null;
 
-  type Occurrence = { uploadId: string; fileName: string; uploadedAt: number; rowIndex: number };
-  const occurrences = db
-    .prepare(
-      `SELECT u.id AS uploadId, u.file_name AS fileName, u.uploaded_at AS uploadedAt, r.row_index AS rowIndex
+  const occRows = await db.query<OccurrenceRow>(
+    `SELECT u.id AS "uploadId",
+            u.file_name AS "fileName",
+            u.uploaded_at AS "uploadedAt",
+            r.row_index AS "rowIndex"
        FROM records r JOIN uploads u ON u.id = r.upload_id
-       WHERE r.value = ? ORDER BY u.uploaded_at DESC LIMIT 50`
-    )
-    .all(value) as Occurrence[];
+      WHERE r.value = $1 ORDER BY u.uploaded_at DESC LIMIT 50`,
+    [value]
+  );
+  const occurrences = occRows.rows.map((o) => ({ ...o, uploadedAt: Number(o.uploadedAt) }));
 
-  logAudit("lookup", {
+  await logAudit("lookup", {
     targetValue: value,
     actor: body.actor,
     details: { blacklisted: !!blacklisted, occurrences: occurrences.length },
   });
 
-  return NextResponse.json({ value, validation, blacklisted: blacklisted ?? null, occurrences });
+  return NextResponse.json({ value, validation, blacklisted, occurrences });
 }

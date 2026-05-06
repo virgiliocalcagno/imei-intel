@@ -3,6 +3,7 @@ import { getDb, logAudit } from "@/lib/db";
 import { classify, normalize } from "@/lib/imei";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 interface BlacklistEntry {
   id: number;
@@ -12,7 +13,7 @@ interface BlacklistEntry {
   reason: string | null;
   case_number: string | null;
   reported_by: string | null;
-  reported_at: number;
+  reported_at: string;
   notes: string | null;
 }
 
@@ -32,54 +33,66 @@ interface BulkBody {
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const q = url.searchParams.get("q")?.trim();
-  const db = getDb();
-  let rows: BlacklistEntry[];
-  if (q) {
-    rows = db
-      .prepare(
-        `SELECT * FROM blacklist WHERE value LIKE ? OR case_number LIKE ? OR reason LIKE ?
-         ORDER BY reported_at DESC LIMIT 500`
+  const db = await getDb();
+
+  const result = q
+    ? await db.query<BlacklistEntry>(
+        `SELECT * FROM blacklist
+         WHERE value ILIKE $1 OR case_number ILIKE $1 OR reason ILIKE $1
+         ORDER BY reported_at DESC LIMIT 500`,
+        [`%${q}%`]
       )
-      .all(`%${q}%`, `%${q}%`, `%${q}%`) as BlacklistEntry[];
-  } else {
-    rows = db
-      .prepare(`SELECT * FROM blacklist ORDER BY reported_at DESC LIMIT 500`)
-      .all() as BlacklistEntry[];
-  }
-  return NextResponse.json(rows.map(toApi));
+    : await db.query<BlacklistEntry>(`SELECT * FROM blacklist ORDER BY reported_at DESC LIMIT 500`);
+
+  return NextResponse.json(result.rows.map(toApi));
 }
 
 export async function POST(req: Request) {
   const body = (await req.json()) as CreateBody | BulkBody;
-  const db = getDb();
-  const stmt = db.prepare(
-    `INSERT OR REPLACE INTO blacklist (value, kind, category, reason, case_number, reported_by, reported_at, notes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  );
+  const db = await getDb();
 
   const entries: CreateBody[] = "entries" in body ? body.entries : [body];
   let inserted = 0;
-  const txn = db.transaction(() => {
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
     for (const e of entries) {
       const value = normalize(e.value);
       if (!value) continue;
       const kind = classify(value);
-      stmt.run(
-        value,
-        kind,
-        e.category || "uncategorized",
-        e.reason ?? null,
-        e.caseNumber ?? null,
-        e.reportedBy ?? null,
-        Date.now(),
-        e.notes ?? null
+      await client.query(
+        `INSERT INTO blacklist (value, kind, category, reason, case_number, reported_by, reported_at, notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT (value) DO UPDATE SET
+           kind        = EXCLUDED.kind,
+           category    = EXCLUDED.category,
+           reason      = EXCLUDED.reason,
+           case_number = EXCLUDED.case_number,
+           reported_by = EXCLUDED.reported_by,
+           reported_at = EXCLUDED.reported_at,
+           notes       = EXCLUDED.notes`,
+        [
+          value,
+          kind,
+          e.category || "uncategorized",
+          e.reason ?? null,
+          e.caseNumber ?? null,
+          e.reportedBy ?? null,
+          Date.now(),
+          e.notes ?? null,
+        ]
       );
       inserted++;
     }
-  });
-  txn();
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
 
-  logAudit("blacklist.add", {
+  await logAudit("blacklist.add", {
     details: { count: inserted },
     actor: entries[0]?.reportedBy,
   });
@@ -96,7 +109,7 @@ function toApi(r: BlacklistEntry) {
     reason: r.reason,
     caseNumber: r.case_number,
     reportedBy: r.reported_by,
-    reportedAt: r.reported_at,
+    reportedAt: Number(r.reported_at),
     notes: r.notes,
   };
 }

@@ -3,68 +3,72 @@ import { getDb, logAudit } from "@/lib/db";
 import type { AnalysisRecord, AnalysisReport } from "@/lib/dedupe";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 interface UploadRow {
   id: string;
   file_name: string;
-  file_size: number;
-  uploaded_at: number;
-  summary_json: string;
+  file_size: string;
+  uploaded_at: string;
+  summary_json: AnalysisReport["summary"];
 }
 
 interface RecordRow {
   row_index: number;
   value: string;
   kind: string;
-  valid: number;
+  valid: boolean;
   reason: string | null;
-  is_duplicate: number;
-  duplicate_rows: string | null;
+  is_duplicate: boolean;
+  duplicate_rows: number[] | null;
   source: string | null;
+}
+
+interface BlacklistRow {
+  value: string;
+  kind: string;
+  category: string;
+  reason: string | null;
+  case_number: string | null;
 }
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
-  const db = getDb();
+  const db = await getDb();
 
-  const meta = db
-    .prepare(
-      `SELECT id, file_name, file_size, uploaded_at, summary_json FROM uploads WHERE id = ?`
+  const meta = (
+    await db.query<UploadRow>(
+      `SELECT id, file_name, file_size, uploaded_at, summary_json FROM uploads WHERE id = $1`,
+      [id]
     )
-    .get(id) as UploadRow | undefined;
+  ).rows[0];
   if (!meta) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  const records = (
-    db
-      .prepare(
-        `SELECT row_index, value, kind, valid, reason, is_duplicate, duplicate_rows, source
-         FROM records WHERE upload_id = ? ORDER BY row_index ASC`
-      )
-      .all(id) as RecordRow[]
-  ).map<AnalysisRecord>((r) => ({
+  const recordRows = (
+    await db.query<RecordRow>(
+      `SELECT row_index, value, kind, valid, reason, is_duplicate, duplicate_rows, source
+         FROM records WHERE upload_id = $1 ORDER BY row_index ASC`,
+      [id]
+    )
+  ).rows;
+
+  const records: AnalysisRecord[] = recordRows.map((r) => ({
     rowIndex: r.row_index,
     value: r.value,
     raw: r.value,
     kind: r.kind as AnalysisRecord["kind"],
-    valid: r.valid === 1,
+    valid: r.valid,
     reason: r.reason ?? undefined,
-    isDuplicate: r.is_duplicate === 1,
-    duplicateRows: r.duplicate_rows ? (JSON.parse(r.duplicate_rows) as number[]) : [],
+    isDuplicate: r.is_duplicate,
+    duplicateRows: r.duplicate_rows ?? [],
     source: r.source ?? "",
   }));
 
-  // Cross-check against blacklist.
-  type BlacklistRow = {
-    value: string;
-    kind: string;
-    category: string;
-    reason: string | null;
-    case_number: string | null;
-  };
   const blacklist = new Map<string, BlacklistRow>();
-  for (const b of db.prepare(`SELECT value, kind, category, reason, case_number FROM blacklist`).all() as BlacklistRow[]) {
-    blacklist.set(b.value, b);
-  }
+  const blacklistRows = await db.query<BlacklistRow>(
+    `SELECT value, kind, category, reason, case_number FROM blacklist`
+  );
+  for (const b of blacklistRows.rows) blacklist.set(b.value, b);
 
   const enriched = records.map((r) => {
     const hit = blacklist.get(r.value);
@@ -79,8 +83,6 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       : { ...r, blacklisted: false };
   });
 
-  const summary = JSON.parse(meta.summary_json) as AnalysisReport["summary"];
-  // Recompute duplicate groups from records (kept lean to avoid storing it twice).
   const groupMap = new Map<string, number[]>();
   for (const r of records) {
     if (r.isDuplicate) {
@@ -94,16 +96,16 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   return NextResponse.json({
     id: meta.id,
     fileName: meta.file_name,
-    fileSize: meta.file_size,
-    uploadedAt: meta.uploaded_at,
-    report: { records: enriched, summary, duplicateGroups },
+    fileSize: Number(meta.file_size),
+    uploadedAt: Number(meta.uploaded_at),
+    report: { records: enriched, summary: meta.summary_json, duplicateGroups },
   });
 }
 
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
-  const db = getDb();
-  const r = db.prepare(`DELETE FROM uploads WHERE id = ?`).run(id);
-  logAudit("upload.delete", { targetValue: id, details: { changes: r.changes } });
-  return NextResponse.json({ deleted: r.changes });
+  const db = await getDb();
+  const r = await db.query(`DELETE FROM uploads WHERE id = $1`, [id]);
+  await logAudit("upload.delete", { targetValue: id, details: { changes: r.rowCount ?? 0 } });
+  return NextResponse.json({ deleted: r.rowCount ?? 0 });
 }

@@ -1,95 +1,99 @@
-import Database from "better-sqlite3";
-import { mkdirSync } from "node:fs";
-import { dirname, join } from "node:path";
+// Postgres-backed persistence layer (Vercel Postgres / Neon).
+// Uses node-postgres with a module-level Pool so that Vercel serverless
+// invocations within the same warm instance share connections.
 
-let dbInstance: Database.Database | null = null;
+import { Pool, type PoolConfig } from "pg";
 
-function dbPath(): string {
-  // In dev, store next to the project. In a packaged Tauri build, the app will
-  // override this with the platform's user data directory.
-  const override = process.env.IMEI_DB_PATH;
-  if (override) return override;
-  return join(process.cwd(), "data", "imei.db");
+let pool: Pool | null = null;
+let migrated = false;
+
+function getPool(): Pool {
+  if (pool) return pool;
+  const connectionString = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error("POSTGRES_URL is not set. Configure your database connection.");
+  }
+  const config: PoolConfig = {
+    connectionString,
+    ssl: connectionString.includes("localhost") ? false : { rejectUnauthorized: false },
+    max: 10,
+    idleTimeoutMillis: 10_000,
+  };
+  pool = new Pool(config);
+  return pool;
 }
 
-export function getDb(): Database.Database {
-  if (dbInstance) return dbInstance;
-  const path = dbPath();
-  mkdirSync(dirname(path), { recursive: true });
-  const db = new Database(path);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
-  migrate(db);
-  dbInstance = db;
-  return db;
-}
-
-function migrate(db: Database.Database) {
-  db.exec(`
+async function migrate() {
+  if (migrated) return;
+  const p = getPool();
+  await p.query(`
     CREATE TABLE IF NOT EXISTS uploads (
-      id            TEXT PRIMARY KEY,
-      file_name     TEXT NOT NULL,
-      file_size     INTEGER NOT NULL,
-      uploaded_at   INTEGER NOT NULL,
-      summary_json  TEXT NOT NULL
+      id           TEXT PRIMARY KEY,
+      file_name    TEXT NOT NULL,
+      file_size    BIGINT NOT NULL,
+      uploaded_at  BIGINT NOT NULL,
+      summary_json JSONB NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS records (
-      id              INTEGER PRIMARY KEY AUTOINCREMENT,
-      upload_id       TEXT NOT NULL,
+      id              BIGSERIAL PRIMARY KEY,
+      upload_id       TEXT NOT NULL REFERENCES uploads(id) ON DELETE CASCADE,
       row_index       INTEGER NOT NULL,
       value           TEXT NOT NULL,
       kind            TEXT NOT NULL,
-      valid           INTEGER NOT NULL,
+      valid           BOOLEAN NOT NULL,
       reason          TEXT,
-      is_duplicate    INTEGER NOT NULL,
-      duplicate_rows  TEXT,
-      source          TEXT,
-      FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE CASCADE
+      is_duplicate    BOOLEAN NOT NULL,
+      duplicate_rows  JSONB,
+      source          TEXT
     );
-
     CREATE INDEX IF NOT EXISTS idx_records_upload ON records(upload_id);
     CREATE INDEX IF NOT EXISTS idx_records_value  ON records(value);
 
     CREATE TABLE IF NOT EXISTS blacklist (
-      id            INTEGER PRIMARY KEY AUTOINCREMENT,
-      value         TEXT NOT NULL UNIQUE,
-      kind          TEXT NOT NULL,
-      category      TEXT NOT NULL,
-      reason        TEXT,
-      case_number   TEXT,
-      reported_by   TEXT,
-      reported_at   INTEGER NOT NULL,
-      notes         TEXT
+      id           BIGSERIAL PRIMARY KEY,
+      value        TEXT NOT NULL UNIQUE,
+      kind         TEXT NOT NULL,
+      category     TEXT NOT NULL,
+      reason       TEXT,
+      case_number  TEXT,
+      reported_by  TEXT,
+      reported_at  BIGINT NOT NULL,
+      notes        TEXT
     );
-
     CREATE INDEX IF NOT EXISTS idx_blacklist_value ON blacklist(value);
 
     CREATE TABLE IF NOT EXISTS audit_log (
-      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      id            BIGSERIAL PRIMARY KEY,
       action        TEXT NOT NULL,
       target_value  TEXT,
       actor         TEXT,
-      at            INTEGER NOT NULL,
-      details_json  TEXT
+      at            BIGINT NOT NULL,
+      details_json  JSONB
     );
-
-    CREATE INDEX IF NOT EXISTS idx_audit_at ON audit_log(at);
+    CREATE INDEX IF NOT EXISTS idx_audit_at ON audit_log(at DESC);
   `);
+  migrated = true;
 }
 
-export function logAudit(
+export async function getDb(): Promise<Pool> {
+  await migrate();
+  return getPool();
+}
+
+export async function logAudit(
   action: string,
   opts: { targetValue?: string; actor?: string; details?: unknown } = {}
 ) {
-  const db = getDb();
-  db.prepare(
-    `INSERT INTO audit_log (action, target_value, actor, at, details_json) VALUES (?, ?, ?, ?, ?)`
-  ).run(
-    action,
-    opts.targetValue ?? null,
-    opts.actor ?? null,
-    Date.now(),
-    opts.details ? JSON.stringify(opts.details) : null
+  const db = await getDb();
+  await db.query(
+    `INSERT INTO audit_log (action, target_value, actor, at, details_json) VALUES ($1, $2, $3, $4, $5)`,
+    [
+      action,
+      opts.targetValue ?? null,
+      opts.actor ?? null,
+      Date.now(),
+      opts.details ? JSON.stringify(opts.details) : null,
+    ]
   );
 }
