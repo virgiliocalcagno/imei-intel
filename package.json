@@ -1,0 +1,81 @@
+{
+  "name": "imei-intel",
+  "productName": "IMEI Intel",
+  "version": "0.1.0",
+  "description": "Validador local de IMEI/ICCID con detección de duplicados y lista negra",
+  "author": "IMEI Intel",
+  "private": true,
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "postbuild": "node scripts/postbuild.cjs",
+    "start": "next start",
+    "lint": "next lint",
+    "electron:dev": "npm run build && electron .",
+    "dist": "npm run build && electron-builder --win"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
+    "lucide-react": "^0.460.0",
+    "next": "^16.2.4",
+    "papaparse": "^5.4.1",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22",
+    "@types/papaparse": "^5.3.15",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.20",
+    "electron": "^42.0.0",
+    "electron-builder": "^26.8.1",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.6.3"
+  },
+  "build": {
+    "appId": "com.imeintel.app",
+    "productName": "IMEI Intel",
+    "directories": {
+      "output": "dist-installer"
+    },
+    "npmRebuild": false,
+    "buildDependenciesFromSource": false,
+    "files": [
+      "electron/**/*",
+      "package.json",
+      ".next/standalone/**/*"
+    ],
+    "asarUnpack": [
+      ".next/standalone/**/*"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "IMEI Intel",
+      "uninstallDisplayName": "IMEI Intel",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

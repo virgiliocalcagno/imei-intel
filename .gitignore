@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+dist
+dist-installer
+*.log
+.env
+.env.local
+.DS_Store
+next-env.d.ts
+.vscode
+data/imei.db*
+sample
+.claude

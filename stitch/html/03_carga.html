@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>IMEI Intelligence - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "surface-container-high": "#dce9ff",
+                  "inverse-primary": "#a0c9ff",
+                  "surface-dim": "#cbdbf5",
+                  "surface-bright": "#f8f9ff",
+                  "on-tertiary-fixed": "#191c1e",
+                  "on-primary-fixed": "#001c37",
+                  "on-surface-variant": "#42474f",
+                  "tertiary-container": "#474b4d",
+                  "on-primary": "#ffffff",
+                  "secondary": "#006a61",
+                  "on-background": "#0b1c30",
+                  "on-tertiary-fixed-variant": "#444749",
+                  "surface-container-low": "#eff4ff",
+                  "on-secondary-fixed-variant": "#005049",
+                  "tertiary-fixed": "#e0e3e5",
+                  "on-primary-container": "#8ebdf9",
+                  "secondary-fixed-dim": "#6bd8cb",
+                  "inverse-surface": "#213145",
+                  "outline": "#727780",
+                  "on-tertiary": "#ffffff",
+                  "surface-container-highest": "#d3e4fe",
+                  "secondary-fixed": "#89f5e7",
+                  "secondary-container": "#86f2e4",
+                  "on-surface": "#0b1c30",
+                  "surface-tint": "#2d6197",
+                  "primary": "#00355f",
+                  "error-container": "#ffdad6",
+                  "surface-container-lowest": "#ffffff",
+                  "on-error-container": "#93000a",
+                  "on-tertiary-container": "#b8bbbc",
+                  "background": "#f8f9ff",
+                  "error": "#ba1a1a",
+                  "primary-fixed-dim": "#a0c9ff",
+                  "on-secondary": "#ffffff",
+                  "on-secondary-container": "#006f66",
+                  "on-secondary-fixed": "#00201d",
+                  "tertiary-fixed-dim": "#c4c7c9",
+                  "outline-variant": "#c2c7d1",
+                  "primary-fixed": "#d2e4ff",
+                  "tertiary": "#313436",
+                  "on-error": "#ffffff",
+                  "surface-variant": "#d3e4fe",
+                  "on-primary-fixed-variant": "#07497d",
+                  "surface-container": "#e5eeff",
+                  "primary-container": "#0f4c81",
+                  "surface": "#f8f9ff",
+                  "inverse-on-surface": "#eaf1ff"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.125rem",
+                  "lg": "0.25rem",
+                  "xl": "0.5rem",
+                  "full": "0.75rem"
+          },
+          "spacing": {
+                  "stack-sm": "0.5rem",
+                  "stack-lg": "1.5rem",
+                  "gutter": "1rem",
+                  "margin": "2rem",
+                  "stack-xs": "0.25rem",
+                  "container-max-width": "1440px",
+                  "stack-md": "1rem"
+          },
+          "fontFamily": {
+                  "body-lg": ["Inter"],
+                  "headline-md": ["Inter"],
+                  "body-md": ["Inter"],
+                  "body-sm": ["Inter"],
+                  "headline-lg": ["Inter"],
+                  "mono-data": ["monospace"],
+                  "headline-xl": ["Inter"],
+                  "label-md": ["Inter"]
+          },
+          "fontSize": {
+                  "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                  "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                  "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                  "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                  "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                  "mono-data": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                  "headline-xl": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                  "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    body {
+      background-color: #F1F5F9; /* As per Style Guidance layout section */
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #c2c7d1;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body class="font-body-md text-on-surface">
+<!-- SideNavBar Component -->
+<aside class="fixed left-0 top-0 h-full w-[280px] bg-surface-container-low border-r border-outline-variant flex flex-col p-stack-md gap-stack-sm z-50">
+<div class="flex flex-col gap-stack-xs mb-stack-lg px-2">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary" data-icon="terminal">terminal</span>
+</div>
+<div>
+<h1 class="text-headline-md font-headline-md font-bold text-primary">IMEI Intel</h1>
+<p class="text-label-md text-on-surface-variant">Enterprise Ops</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1 flex-grow">
+<!-- Dashboard Active Tab -->
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container font-semibold rounded-lg transition-transform scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-highest transition-all rounded-lg cursor-pointer" href="#">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span class="font-body-md">Results</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-highest transition-all rounded-lg cursor-pointer" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-body-md">Reports</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-highest transition-all rounded-lg cursor-pointer" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-body-md">History</span>
+</a>
+</div>
+<div class="mt-auto flex flex-col gap-1 border-t border-outline-variant pt-stack-md">
+<button class="w-full mb-4 bg-primary text-on-primary py-3 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined" data-icon="upload">upload</span>
+        Upload New File
+      </button>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-highest transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-body-md">Support</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-highest transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-body-md">Sign Out</span>
+</a>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="ml-[280px] min-h-screen flex flex-col">
+<!-- TopAppBar Component -->
+<header class="flex justify-between items-center h-16 px-margin w-full sticky top-0 z-40 bg-surface border-b border-outline-variant">
+<div class="flex items-center gap-stack-lg flex-grow">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-body-md focus:ring-1 focus:ring-primary focus:border-primary outline-none" placeholder="Search data points, files, or reports..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-stack-md">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors active:opacity-80">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors active:opacity-80">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="h-8 w-[1px] bg-outline-variant mx-2"></div>
+<div class="flex items-center gap-3 cursor-pointer p-1 hover:bg-surface-container-low rounded-lg transition-colors">
+<img alt="User Profile Avatar" class="w-8 h-8 rounded-full border border-outline-variant" data-alt="A professional high-resolution profile portrait of a corporate operations manager in a well-lit modern office setting. The lighting is soft and flattering, emphasizing a confident and reliable professional demeanor. The image uses a clean, bright aesthetic with subtle blue and gray tones to match the corporate design system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-vufrCf84ylc7d8vTW_bu8Qy3v_gyZ1WvxAxCnRVJmtOctjlSKpCdjS1JtZZ8aprJgEzLNGwsbeh4xMH6vvmivOJtOZevipnUraA0Rybb5PNSveF8fz7kZSCb-zi2g4xi47ZGw3wTV8tZCXoRTBxtI90-MUw6-AVx4T-aYLQrfUsmK9SWI6ceRX-dSofawRXJHJ5QAujyg2yM0UQmY7zqwiUE6oQ0lbj6WN6qw7fYroUK1mOP5uIpS2mdIBJRGEazMhW25WQQUQ8"/>
+<span class="text-body-md font-semibold text-primary">Admin User</span>
+</div>
+</div>
+</header>
+<!-- Content Area -->
+<div class="p-margin max-w-container-max-width mx-auto w-full grid grid-cols-12 gap-gutter">
+<!-- Welcome Header -->
+<div class="col-span-12 mb-stack-md">
+<h2 class="text-headline-xl font-headline-xl text-primary">Data Validation Dashboard</h2>
+<p class="text-body-lg text-on-surface-variant mt-1">Ready to process your enterprise IMEI and ICCID records.</p>
+</div>
+<!-- Main Upload Bento Section -->
+<div class="col-span-12 lg:col-span-8 space-y-gutter">
+<!-- Central Upload Zone -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-lg flex flex-col items-center justify-center min-h-[400px] border-dashed border-2 border-secondary/40 hover:border-secondary transition-colors group cursor-pointer">
+<div class="w-20 h-20 bg-surface-container-high rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[48px] text-secondary" data-icon="upload_file">upload_file</span>
+</div>
+<h3 class="text-headline-lg font-headline-lg text-primary mb-2">Upload Excel or CSV</h3>
+<p class="text-body-md text-on-surface-variant text-center max-w-sm mb-8">
+            Drag and drop your data file here, or <span class="text-secondary font-semibold underline">browse computer</span> to start the automated validation process.
+          </p>
+<div class="flex items-center gap-4 text-label-md text-on-surface-variant">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="check_circle">check_circle</span>
+<span>Max 500MB</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="check_circle">check_circle</span>
+<span>XLSX, XLS, CSV</span>
+</div>
+</div>
+</div>
+<!-- Status Cards Row -->
+<div class="grid grid-cols-3 gap-gutter">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-stack-md">
+<div class="flex justify-between items-start mb-2">
+<span class="text-label-md text-on-surface-variant">TOTAL PROCESSED</span>
+<span class="material-symbols-outlined text-secondary" data-icon="database">database</span>
+</div>
+<div class="text-headline-md font-bold text-primary">1,284,092</div>
+<div class="text-body-sm text-secondary mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="trending_up">trending_up</span>
+              12% from last week
+            </div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-stack-md">
+<div class="flex justify-between items-start mb-2">
+<span class="text-label-md text-on-surface-variant">ACCURACY RATE</span>
+<span class="material-symbols-outlined text-primary" data-icon="verified">verified</span>
+</div>
+<div class="text-headline-md font-bold text-primary">99.98%</div>
+<div class="text-body-sm text-secondary mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="check">check</span>
+              High Precision
+            </div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-stack-md">
+<div class="flex justify-between items-start mb-2">
+<span class="text-label-md text-on-surface-variant">ACTIVE JOBS</span>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="sync">sync</span>
+</div>
+<div class="text-headline-md font-bold text-primary">0</div>
+<div class="text-body-sm text-on-surface-variant mt-1">Ready for input</div>
+</div>
+</div>
+</div>
+<!-- Side Column: Activity & Tips -->
+<div class="col-span-12 lg:col-span-4 space-y-gutter">
+<!-- Recent Activity Section -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-md flex flex-col h-[320px]">
+<div class="flex justify-between items-center mb-4">
+<h4 class="text-label-md text-primary font-bold tracking-wider">RECENT ACTIVITY</h4>
+<button class="text-secondary text-label-md font-bold hover:underline">VIEW ALL</button>
+</div>
+<div class="space-y-4 overflow-y-auto custom-scrollbar pr-2">
+<div class="flex gap-3 pb-3 border-b border-outline-variant last:border-0">
+<div class="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px] text-primary" data-icon="description">description</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start">
+<p class="text-body-sm font-semibold text-primary truncate w-32">Q4_Inventory_Final.xlsx</p>
+<span class="text-[11px] text-on-surface-variant">2h ago</span>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<span class="px-1.5 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold rounded">UNIQUE</span>
+<span class="text-[11px] text-on-surface-variant">42,001 rows validated</span>
+</div>
+</div>
+</div>
+<div class="flex gap-3 pb-3 border-b border-outline-variant last:border-0">
+<div class="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px] text-primary" data-icon="description">description</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start">
+<p class="text-body-sm font-semibold text-primary truncate w-32">Daily_Batch_0912.csv</p>
+<span class="text-[11px] text-on-surface-variant">5h ago</span>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<span class="px-1.5 py-0.5 bg-error-container text-on-error-container text-[10px] font-bold rounded">DUPLICATES</span>
+<span class="text-[11px] text-on-surface-variant">Resolved 12 errors</span>
+</div>
+</div>
+</div>
+<div class="flex gap-3 pb-3 border-b border-outline-variant last:border-0">
+<div class="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px] text-primary" data-icon="description">description</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start">
+<p class="text-body-sm font-semibold text-primary truncate w-32">Region_A_Import.xlsx</p>
+<span class="text-[11px] text-on-surface-variant">Yesterday</span>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<span class="px-1.5 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold rounded">SUCCESS</span>
+<span class="text-[11px] text-on-surface-variant">Exported to S3</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Tips Section -->
+<div class="bg-primary text-on-primary rounded-xl p-stack-lg relative overflow-hidden">
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined" data-icon="lightbulb">lightbulb</span>
+<h4 class="text-label-md font-bold tracking-wider">QUICK FORMATTING TIPS</h4>
+</div>
+<ul class="space-y-3">
+<li class="flex gap-2">
+<span class="material-symbols-outlined text-[16px] mt-0.5" data-icon="arrow_forward">arrow_forward</span>
+<p class="text-body-sm text-primary-fixed">Ensure IMEI numbers are exactly 15 digits without spaces or special characters.</p>
+</li>
+<li class="flex gap-2">
+<span class="material-symbols-outlined text-[16px] mt-0.5" data-icon="arrow_forward">arrow_forward</span>
+<p class="text-body-sm text-primary-fixed">Header row must include "IMEI" or "ICCID" labels for auto-mapping.</p>
+</li>
+<li class="flex gap-2">
+<span class="material-symbols-outlined text-[16px] mt-0.5" data-icon="arrow_forward">arrow_forward</span>
+<p class="text-body-sm text-primary-fixed">Max row count for real-time validation is 1,000,000. Use Batches for more.</p>
+</li>
+</ul>
+<button class="mt-6 w-full py-2 bg-secondary text-on-secondary rounded font-semibold text-body-sm hover:opacity-90">
+              Download Sample Template
+            </button>
+</div>
+<!-- Decorative Background Shape -->
+<div class="absolute -bottom-10 -right-10 w-40 h-40 bg-on-primary/10 rounded-full"></div>
+</div>
+</div>
+<!-- Feature Highlight / Promo Card -->
+<div class="col-span-12 mt-gutter">
+<div class="bg-surface-container rounded-xl p-stack-lg border border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-6">
+<div class="w-16 h-16 bg-surface-container-lowest rounded-xl flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-[32px] text-primary" data-icon="security">security</span>
+</div>
+<div>
+<h4 class="text-headline-md text-primary">Enterprise Data Shield Active</h4>
+<p class="text-body-md text-on-surface-variant">All uploads are encrypted end-to-end and scrubbed of PII automatically after processing.</p>
+</div>
+</div>
+<button class="px-6 py-2 border border-primary text-primary font-semibold rounded hover:bg-primary hover:text-on-primary transition-colors">
+            View Compliance Report
+          </button>
+</div>
+</div>
+</div>
+<!-- Background Decoration for Style -->
+<div class="fixed bottom-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
+<div class="fixed top-0 left-[300px] w-[400px] h-[400px] bg-secondary/5 rounded-full blur-[80px] -z-10 pointer-events-none"></div>
+</main>
+</body></html>
